@@ -14,7 +14,7 @@ class PostViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthorOrReadOnly]
 
     def perform_create(self, serializer):
-        if not self.request.user.is_authenticated:
+        if not self.request.user:
             raise ValidationError(
                 'Только зарегистрированные пользователи '
                 'могут отправлять сообщения.'
@@ -32,36 +32,21 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
-        return Comment.objects.filter(post_id=post_id)
+        post = get_object_or_404(Post, id=post_id)
+        return post.comments.all()
 
     def perform_create(self, serializer):
         post_id = self.kwargs.get('post_id')
         post = get_object_or_404(Post, pk=post_id)
         serializer.save(author=self.request.user, post=post)
 
-    def list(self, request, post_id=None):
-        comments = self.get_queryset()
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def create(self, request, post_id=None):
-        serializer = CommentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        post = get_object_or_404(Post, pk=post_id)
-        serializer.save(author=self.request.user, post=post)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-class GroupViewSet(
-    mixins.RetrieveModelMixin,
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet
-):
+class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
     def retrieve(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
+        if not request.user:
             return Response(
                 {'detail': 'Зарегистрируйтесь или войдите на сайт.'},
                 status=status.HTTP_401_UNAUTHORIZED
@@ -69,7 +54,7 @@ class GroupViewSet(
         return super().retrieve(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
+        if not request.user:
             return Response(
                 {'detail': 'Зарегистрируйтесь или войдите на сайт.'},
                 status=status.HTTP_401_UNAUTHORIZED
