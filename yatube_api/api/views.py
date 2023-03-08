@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
-from posts.models import Comment, Group, Post
-from rest_framework import mixins, permissions, status, viewsets
+from posts.models import Group, Post
+from rest_framework import permissions, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
